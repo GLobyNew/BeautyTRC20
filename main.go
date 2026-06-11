@@ -97,9 +97,33 @@ func worker(ctx context.Context, tailLen int, attempts *atomic.Uint64, found cha
 	}
 }
 
+func usage() {
+	fmt.Fprintf(flag.CommandLine.Output(), `BeautyTRC20 — generator of beautiful TRC20 (TRON) addresses.
+
+Brute-forces random BIP39 mnemonics until the derived TRON address
+(path m/44'/195'/0'/0/0) ends with N identical characters, then writes
+the mnemonic and the address to %s.
+
+Usage:
+  %s -n <count>
+
+Flags:
+  -n int
+        number of identical characters the address must end with (1-33, required)
+
+Example:
+  %s -n 5
+`, outputFile, os.Args[0], os.Args[0])
+}
+
 func main() {
-	tailLen := flag.Int("n", 3, "number of identical characters the address must end with")
+	flag.Usage = usage
+	tailLen := flag.Int("n", 0, "number of identical characters the address must end with (1-33, required)")
 	flag.Parse()
+	if flag.NFlag() == 0 {
+		usage()
+		os.Exit(2)
+	}
 	// A TRON address is 34 chars and always starts with 'T'.
 	if *tailLen < 1 || *tailLen > 33 {
 		fmt.Fprintln(os.Stderr, "error: -n must be between 1 and 33")
