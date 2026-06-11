@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync/atomic"
 	"time"
@@ -113,7 +114,7 @@ Flags:
 
 Example:
   %s -n 5
-`, outputFile, os.Args[0], os.Args[0])
+`, outputFile, filepath.Base(os.Args[0]), filepath.Base(os.Args[0]))
 }
 
 func main() {
