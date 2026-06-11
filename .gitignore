@@ -27,6 +27,9 @@ go.work.sum
 # env file
 .env
 
+# Generated wallet (contains a mnemonic / private key seed — never commit)
+success.txt
+
 # Editor/IDE
 # .idea/
 # .vscode/
