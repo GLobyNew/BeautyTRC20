@@ -19,18 +19,21 @@ func TestDeriveTronAddress(t *testing.T) {
 
 func TestIsBeautiful(t *testing.T) {
 	tests := []struct {
-		addr string
-		want bool
+		addr    string
+		tailLen int
+		want    bool
 	}{
-		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhGWYdH", false},
-		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhGaaa", true},
-		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhGaaA", false},
-		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhG111", true},
-		{"ab", false},
+		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhGWYdH", 3, false},
+		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhGWaaa", 3, true},
+		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhGWaaa", 4, false},
+		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhaaaaa", 5, true},
+		{"TUEZSdKsoDHQMeZwihtdoBiN46zxhAaaaa", 5, false},
+		{"TUEZSdKsoDHQMeZwihtdoBiN46zxh11111", 5, true},
+		{"ab", 3, false},
 	}
 	for _, tt := range tests {
-		if got := isBeautiful(tt.addr); got != tt.want {
-			t.Errorf("isBeautiful(%q) = %v, want %v", tt.addr, got, tt.want)
+		if got := isBeautiful(tt.addr, tt.tailLen); got != tt.want {
+			t.Errorf("isBeautiful(%q, %d) = %v, want %v", tt.addr, tt.tailLen, got, tt.want)
 		}
 	}
 }

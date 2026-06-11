@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"runtime"
@@ -50,13 +51,19 @@ func deriveTronAddress(mnemonic string) (string, error) {
 	return base58.CheckEncode(digest[12:], 0x41), nil
 }
 
-// isBeautiful reports whether the last 3 characters of addr are identical.
-func isBeautiful(addr string) bool {
+// isBeautiful reports whether the last tailLen characters of addr are identical.
+func isBeautiful(addr string, tailLen int) bool {
 	n := len(addr)
-	if n < 3 {
+	if n < tailLen {
 		return false
 	}
-	return addr[n-1] == addr[n-2] && addr[n-2] == addr[n-3]
+	last := addr[n-1]
+	for i := n - tailLen; i < n-1; i++ {
+		if addr[i] != last {
+			return false
+		}
+	}
+	return true
 }
 
 type result struct {
@@ -64,7 +71,7 @@ type result struct {
 	address  string
 }
 
-func worker(ctx context.Context, attempts *atomic.Uint64, found chan<- result) {
+func worker(ctx context.Context, tailLen int, attempts *atomic.Uint64, found chan<- result) {
 	for ctx.Err() == nil {
 		entropy, err := bip39.NewEntropy(128)
 		if err != nil {
@@ -80,7 +87,7 @@ func worker(ctx context.Context, attempts *atomic.Uint64, found chan<- result) {
 			continue
 		}
 		attempts.Add(1)
-		if isBeautiful(addr) {
+		if isBeautiful(addr, tailLen) {
 			select {
 			case found <- result{mnemonic: mnemonic, address: addr}:
 			default:
@@ -91,6 +98,14 @@ func worker(ctx context.Context, attempts *atomic.Uint64, found chan<- result) {
 }
 
 func main() {
+	tailLen := flag.Int("n", 3, "number of identical characters the address must end with")
+	flag.Parse()
+	// A TRON address is 34 chars and always starts with 'T'.
+	if *tailLen < 1 || *tailLen > 33 {
+		fmt.Fprintln(os.Stderr, "error: -n must be between 1 and 33")
+		os.Exit(1)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -98,9 +113,9 @@ func main() {
 	found := make(chan result, 1)
 
 	workers := runtime.NumCPU()
-	fmt.Printf("Searching for a TRON address ending in 3 identical characters (%d workers)...\n", workers)
+	fmt.Printf("Searching for a TRON address ending in %d identical characters (%d workers)...\n", *tailLen, workers)
 	for range workers {
-		go worker(ctx, &attempts, found)
+		go worker(ctx, *tailLen, &attempts, found)
 	}
 
 	start := time.Now()
